@@ -1,16 +1,14 @@
 name: Solar System Workflow
-on:
-  workflow_dispatch:
+'on':
+  workflow_dispatch: null
   push:
     branches:
       - main
-      - 'feature/*'
-    
+      - feature/*
 env:
   MONGO_URI: 'mongodb+srv://supercluster.d83jj.mongodb.net/superData'
   MONGO_USERNAME: superuser
   MONGO_PASSWORD: '${{ secrets.MONGO_PASSWORD }}'
-
 jobs:
   unit-testing:
     name: Unit Testing
@@ -31,11 +29,10 @@ jobs:
         run: npm test
       - name: Archive Test Result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: Mocha-Test-Result
           path: test-results.xml
-
   code-coverage:
     runs-on: ubuntu-latest
     steps:
@@ -46,12 +43,11 @@ jobs:
       - run: npm install
       - continue-on-error: true
         run: npm run coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v3
         with:
           name: Code-Coverage-Result
           path: coverage
           retention-days: 5
-
   docker:
     permissions:
       packages: write
@@ -66,14 +62,13 @@ jobs:
           registry: ghcr.io
           username: '${{ github.repository_owner }}'
           password: '${{ secrets.GITHUB_TOKEN }}'
-
       - uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: >-
-            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
-
+            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha
+            }}
   dev-deploy:
     needs: docker
     runs-on: ubuntu-latest
@@ -89,3 +84,21 @@ jobs:
           method: kubeconfig
           kubeconfig: '${{ secrets.KUBECONFIG }}'
       - run: kubectl version --short -o yaml
+# Below codes are added to complete the task
+      - run: >
+          echo "INGRESS_IP=$(kubectl -n ingress-nginx get services
+          ingress-nginx-controller -o
+          jsonpath='{.status.loadBalancer.ingress[0].ip}')" >> $GITHUB_ENV
+      - uses: cschleiden/replace-tokens@v1
+        with:
+          tokenPrefix: '_{_'
+          tokenSuffix: '_}_'
+          files: '["kubernetes/development/*.yaml"]'
+        env:
+          NAMESPACE: '${{ vars.NAMESPACE }}'
+          REPLICAS: '${{ vars.REPLICAS }}'
+          IMAGE: >-
+            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha
+            }}
+          INGRESS_IP: '${{ env.INGRESS_IP }}'
+      - run: cat kubernetes/development/*.yaml
