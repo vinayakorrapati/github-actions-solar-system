@@ -29,7 +29,7 @@ jobs:
         run: npm test
       - name: Archive Test Result
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Mocha-Test-Result
           path: test-results.xml
@@ -43,7 +43,7 @@ jobs:
       - run: npm install
       - continue-on-error: true
         run: npm run coverage
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: Code-Coverage-Result
           path: coverage
