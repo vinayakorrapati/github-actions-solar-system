@@ -23,6 +23,11 @@ jobs:
         run: npm test
       - name: Archive Test Result
         if: always()
+      - name: Cache NPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: '${{ runner.os }}-node-modules-${{ hashFiles(''package-lock.json'') }}'        
         uses: actions/upload-artifact@v4
         with:
           name: Mocha-Test-Result
